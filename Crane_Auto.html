@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>门机可吊范围计算工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 10px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            margin-bottom: 8px;
+            font-size: 1.5rem;
+        }
+        
+        .subtitle {
+            font-weight: normal;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 15px;
+        }
+        
+        .input-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px;
+            border-right: 1px solid #eee;
+        }
+        
+        .result-section {
+            flex: 2;
+            min-width: 500px;
+            padding: 15px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--dark-color);
+            font-size: 0.9rem;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+        
+        input:focus, select:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+        
+        .input-error {
+            border-color: var(--accent-color);
+            background-color: #ffeaea;
+        }
+        
+        .error-message {
+            color: var(--accent-color);
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .auto-calculation-notice {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 8px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .auto-calculation-notice i {
+            margin-right: 6px;
+            font-size: 1rem;
+        }
+        
+        .result-card {
+            background: var(--light-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+        
+        .result-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+        
+        .range-value {
+            color: #3498db; /* 蓝色 */
+        }
+        
+        .tonnage-value {
+            color: #e74c3c; /* 红色 */
+        }
+        
+        .chart-container {
+            height: 250px;
+            margin-top: 15px;
+        }
+        
+        .tonnage-table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        
+        .tonnage-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 0.8rem;
+        }
+        
+        .tonnage-table th {
+            background: var(--dark-color);
+            color: white;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .tonnage-table td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: center;
+        }
+        
+        .tonnage-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .tonnage-table tr:hover {
+            background: #f1f1f1;
+        }
+        
+        .highlight {
+            background-color: #fffacd !important;
+            font-weight: bold;
+        }
+        
+        .info-box {
+            background: #e1f5fe;
+            border-left: 4px solid var(--secondary-color);
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+            font-size: 0.85rem;
+        }
+        
+        .warning {
+            background: #ffecb3;
+            border-left: 4px solid var(--warning-color);
+        }
+        
+        .calculation-steps {
+            margin: 12px 0;
+            padding-left: 18px;
+            font-size: 0.85rem;
+        }
+        
+        .calculation-steps li {
+            margin-bottom: 6px;
+        }
+        
+        .history-section {
+            margin-top: 20px;
+        }
+        
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            background: #f9f9f9;
+        }
+        
+        .history-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .history-item:hover {
+            background: #e9ecef;
+        }
+        
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .history-date {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+        
+        .history-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .history-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+            font-size: 0.8rem;
+        }
+        
+        .history-btn:hover {
+            color: var(--secondary-color);
+        }
+        
+        .comparison-section {
+            margin-top: 20px;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+        
+        .comparison-table th, .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .comparison-table th {
+            background: var(--dark-color);
+            color: white;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+            flex: 1;
+        }
+        
+        .btn-primary {
+            background: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #27ae60;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 15px;
+            background: var(--light-color);
+            color: var(--dark-color);
+            font-size: 0.8rem;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .input-section {
+                border-right: none;
+                border-bottom: 1px solid #eee;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            header {
+                padding: 10px 15px;
+            }
+            
+            h1 {
+                font-size: 1.3rem;
+            }
+            
+            .content {
+                padding: 10px;
+            }
+            
+            .input-section, .result-section {
+                padding: 10px;
+            }
+            
+            .result-value {
+                font-size: 1.1rem;
+            }
+            
+            .chart-container {
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>门机可吊范围计算工具</h1>
+            <p class="subtitle">优化布局版 - 自动计算、历史记录与方案对比</p>
+        </header>
+        
+        <div class="content">
+            <div class="input-section">
+                <h2>参数输入</h2>
+                
+                <div class="input-group">
+                    <label for="machineType">门机类型</label>
+                    <select id="machineType">
+                        <option value="11#-95">11#门机 (臂长95米)</option>
+                        <option value="789#-95">789#门机 (臂长95米)</option>
+                        <option value="56#-68">56#门机 (臂长68米)</option>
+                        <option value="2#-63">2#门机 (臂长63米)</option>
+                        <option value="134#-56">134#门机 (臂长56米)</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="wharfWidth">码头宽度 (米)</label>
+                    <input type="number" id="wharfWidth" value="10" step="0.1" min="0" max="50">
+                    <div class="error-message" id="wharfWidthError">码头宽度不能超过50米</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="fenderWidth">靠把宽度 (米)</label>
+                    <input type="number" id="fenderWidth" value="2" step="0.1" min="0" max="10">
+                    <div class="error-message" id="fenderWidthError">靠把宽度不能超过10米</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="shipWidth1">1档船宽 (米)</label>
+                    <input type="number" id="shipWidth1" value="45" step="0.1" min="0" max="100">
+                    <div class="error-message" id="shipWidth1Error">船宽不能超过100米</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="shipWidth2">2档船宽 (米)</label>
+                    <input type="number" id="shipWidth2" value="0" step="0.1" min="0" max="100">
+                    <div class="error-message" id="shipWidth2Error">船宽不能超过100米</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="buoyDiameter">靠球直径 (米)</label>
+                    <input type="number" id="buoyDiameter" value="3" step="0.1" min="0" max="10">
+                    <div class="error-message" id="buoyDiameterError">靠球直径不能超过10米</div>
+                </div>
+                
+                <div class="auto-calculation-notice">
+                    <i>✓</i> 修改任意参数后自动计算
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn-primary" onclick="saveCalculation()">保存当前方案</button>
+                    <button class="btn-secondary" onclick="resetForm()">重置参数</button>
+                    <button class="btn-success" onclick="addToComparison()">添加到对比</button>
+                </div>
+                
+                <div class="info-box">
+                    <h3>计算说明</h3>
+                    <p>计算公式：最终可吊范围 = 门机臂长 - 码头宽 - 靠把 - 1档船宽 - 2档船宽 - 靠球</p>
+                    <p>计算结果仅供参考，实际作业请考虑安全系数。</p>
+                </div>
+                
+                <div class="history-section">
+                    <h3>历史记录</h3>
+                    <div class="history-list" id="historyList">
+                        <!-- 历史记录将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="result-section">
+                <h2>计算结果</h2>
+                
+                <div id="result">
+                    <div class="result-card">
+                        <h3>基本结果</h3>
+                        <p>最终可吊范围: <span class="result-value range-value" id="finalRange">35.00</span> 米</p>
+                        <p>建议作业幅度: <span class="result-value" id="suggestedRange">28.00</span> 米</p>
+                        <p>对应可吊吨位: <span class="result-value tonnage-value" id="tonnageResult">25</span> 吨</p>
+                    </div>
+                    
+                    <div class="result-card">
+                        <h3>方案对比</h3>
+                        <div class="tonnage-table-container">
+                            <table class="comparison-table" id="comparisonTable">
+                                <!-- 对比表将通过JavaScript动态生成 -->
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="result-card">
+                        <h3>吨位-幅度关系图</h3>
+                        <div class="chart-container">
+                            <canvas id="tonnageChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="result-card">
+                        <h3>计算步骤</h3>
+                        <ul class="calculation-steps" id="calculationSteps">
+                            <!-- 计算步骤将通过JavaScript动态生成 -->
+                        </ul>
+                    </div>
+                    
+                    <div class="result-card">
+                        <h3>吨位参考表</h3>
+                        <p>当前门机类型: <strong id="currentMachine">11#</strong></p>
+                        <div class="tonnage-table-container">
+                            <table class="tonnage-table" id="tonnageTable">
+                                <!-- 吨位表将通过JavaScript动态生成 -->
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>门机自动计算工具 &copy; 2023 | 基于Excel计算模型开发 | 优化布局版</p>
+        </footer>
+    </div>
+
+    <script>
+        // 完整的吨位数据 - 基于Excel表格
+        const tonnageData = {
+            "11#": [
+                { amplitude: 1, tonnage: 40 }, { amplitude: 3, tonnage: 30 }, { amplitude: 4, tonnage: 40 },
+                { amplitude: 40, tonnage: 30 }, { amplitude: 41, tonnage: 29 }, { amplitude: 42, tonnage: 28 },
+                { amplitude: 43, tonnage: 27 }, { amplitude: 44, tonnage: 26 }, { amplitude: 45, tonnage: 25 },
+                { amplitude: 46, tonnage: 24 }, { amplitude: 47, tonnage: 23 }, { amplitude: 48, tonnage: 22 },
+                { amplitude: 49, tonnage: 21 }, { amplitude: 50, tonnage: 20 }, { amplitude: 51, tonnage: 18.5 },
+                { amplitude: 52, tonnage: 19 }, { amplitude: 53, tonnage: 18 }, { amplitude: 54, tonnage: 17.5 },
+                { amplitude: 55, tonnage: 17 }, { amplitude: 56, tonnage: 16.5 }, { amplitude: 57, tonnage: 16 },
+                { amplitude: 58, tonnage: 15.5 }, { amplitude: 59, tonnage: 15 }, { amplitude: 60, tonnage: 14.5 },
+                { amplitude: 61, tonnage: 14 }, { amplitude: 62, tonnage: 13.5 }, { amplitude: 63, tonnage: 13 },
+                { amplitude: 64, tonnage: 12.5 }, { amplitude: 65, tonnage: 12 }, { amplitude: 66, tonnage: 11.5 },
+                { amplitude: 67, tonnage: 11 }, { amplitude: 68, tonnage: 10.5 }, { amplitude: 69, tonnage: 10 },
+                { amplitude: 70, tonnage: 9.5 }, { amplitude: 71, tonnage: 9 }, { amplitude: 72, tonnage: 8.5 },
+                { amplitude: 73, tonnage: 8 }, { amplitude: 74, tonnage: 7.5 }, { amplitude: 75, tonnage: 7 },
+                { amplitude: 76, tonnage: 6.5 }, { amplitude: 77, tonnage: 6 }, { amplitude: 78, tonnage: 5.5 },
+                { amplitude: 79, tonnage: 5 }, { amplitude: 80, tonnage: 4.5 }, { amplitude: 81, tonnage: 4 },
+                { amplitude: 82, tonnage: 3.5 }, { amplitude: 83, tonnage: 3 }, { amplitude: 84, tonnage: 2.5 },
+                { amplitude: 85, tonnage: 2 }, { amplitude: 86, tonnage: 1.5 }, { amplitude: 87, tonnage: 1 },
+                { amplitude: 88, tonnage: 0.5 }, { amplitude: 89, tonnage: 0.5 }, { amplitude: 90, tonnage: 0.5 },
+                { amplitude: 91, tonnage: 0.5 }, { amplitude: 92, tonnage: 0.5 }, { amplitude: 93, tonnage: 0.5 },
+                { amplitude: 94, tonnage: 0.5 }, { amplitude: 95, tonnage: 0.5 }
+            ],
+            "789#": [
+                { amplitude: 40, tonnage: 30 }, { amplitude: 41, tonnage: 29 }, { amplitude: 42, tonnage: 28 },
+                { amplitude: 43, tonnage: 27 }, { amplitude: 44, tonnage: 26 }, { amplitude: 45, tonnage: 25 },
+                { amplitude: 46, tonnage: 24 }, { amplitude: 47, tonnage: 23 }, { amplitude: 48, tonnage: 22 },
+                { amplitude: 49, tonnage: 21 }, { amplitude: 50, tonnage: 20 }, { amplitude: 51, tonnage: 18.5 },
+                { amplitude: 52, tonnage: 19 }, { amplitude: 53, tonnage: 18 }, { amplitude: 54, tonnage: 17.5 },
+                { amplitude: 55, tonnage: 17 }, { amplitude: 56, tonnage: 16.5 }, { amplitude: 57, tonnage: 16 },
+                { amplitude: 58, tonnage: 15.5 }, { amplitude: 59, tonnage: 15 }, { amplitude: 60, tonnage: 14.5 },
+                { amplitude: 61, tonnage: 14 }, { amplitude: 62, tonnage: 13.5 }, { amplitude: 63, tonnage: 13 },
+                { amplitude: 64, tonnage: 12.5 }, { amplitude: 65, tonnage: 12 }, { amplitude: 66, tonnage: 11.5 },
+                { amplitude: 67, tonnage: 11 }, { amplitude: 68, tonnage: 10.5 }, { amplitude: 69, tonnage: 10 },
+                { amplitude: 70, tonnage: 9.5 }, { amplitude: 71, tonnage: 9 }, { amplitude: 72, tonnage: 8.5 },
+                { amplitude: 73, tonnage: 8 }, { amplitude: 74, tonnage: 7.5 }, { amplitude: 75, tonnage: 7 },
+                { amplitude: 76, tonnage: 6.5 }, { amplitude: 77, tonnage: 6 }, { amplitude: 78, tonnage: 5.5 },
+                { amplitude: 79, tonnage: 5 }, { amplitude: 80, tonnage: 4.5 }, { amplitude: 81, tonnage: 4 },
+                { amplitude: 82, tonnage: 3.5 }, { amplitude: 83, tonnage: 3 }, { amplitude: 84, tonnage: 2.5 },
+                { amplitude: 85, tonnage: 2 }, { amplitude: 86, tonnage: 1.5 }, { amplitude: 87, tonnage: 1 },
+                { amplitude: 88, tonnage: 0.5 }, { amplitude: 89, tonnage: 0.5 }, { amplitude: 90, tonnage: 0.5 },
+                { amplitude: 91, tonnage: 0.5 }, { amplitude: 92, tonnage: 0.5 }, { amplitude: 93, tonnage: 0.5 },
+                { amplitude: 94, tonnage: 0.5 }, { amplitude: 95, tonnage: 0.5 }
+            ],
+            "56#": [
+                { amplitude: 1, tonnage: 45 }, { amplitude: 2, tonnage: 45 }, { amplitude: 3, tonnage: 45 },
+                { amplitude: 4, tonnage: 45 }, { amplitude: 5, tonnage: 45 }, { amplitude: 6, tonnage: 45 },
+                { amplitude: 7, tonnage: 45 }, { amplitude: 8, tonnage: 45 }, { amplitude: 9, tonnage: 45 },
+                { amplitude: 10, tonnage: 45 }, { amplitude: 11, tonnage: 45 }, { amplitude: 12, tonnage: 45 },
+                { amplitude: 13, tonnage: 45 }, { amplitude: 14, tonnage: 45 }, { amplitude: 15, tonnage: 45 },
+                { amplitude: 16, tonnage: 45 }, { amplitude: 17, tonnage: 45 }, { amplitude: 18, tonnage: 45 },
+                { amplitude: 19, tonnage: 45 }, { amplitude: 20, tonnage: 45 }, { amplitude: 21, tonnage: 45 },
+                { amplitude: 22, tonnage: 45 }, { amplitude: 23, tonnage: 45 }, { amplitude: 24, tonnage: 45 },
+                { amplitude: 25, tonnage: 45 }, { amplitude: 26, tonnage: 45 }, { amplitude: 27, tonnage: 45 },
+                { amplitude: 28, tonnage: 45 }, { amplitude: 29, tonnage: 45 }, { amplitude: 30, tonnage: 45 },
+                { amplitude: 31, tonnage: 45 }, { amplitude: 32, tonnage: 45 }, { amplitude: 33, tonnage: 45 },
+                { amplitude: 34, tonnage: 45 }, { amplitude: 35, tonnage: 45 }, { amplitude: 36, tonnage: 45 },
+                { amplitude: 37, tonnage: 45 }, { amplitude: 38, tonnage: 45 }, { amplitude: 39, tonnage: 45 },
+                { amplitude: 40, tonnage: 45 }, { amplitude: 41, tonnage: 45 }, { amplitude: 42, tonnage: 45 },
+                { amplitude: 43, tonnage: 45 }, { amplitude: 44, tonnage: 45 }, { amplitude: 45, tonnage: 45 },
+                { amplitude: 46, tonnage: 45 }, { amplitude: 47, tonnage: 45 }, { amplitude: 48, tonnage: 45 },
+                { amplitude: 49, tonnage: 45 }, { amplitude: 50, tonnage: 45 }, { amplitude: 51, tonnage: 45 },
+                { amplitude: 52, tonnage: 45 }, { amplitude: 53, tonnage: 45 }, { amplitude: 54, tonnage: 45 },
+                { amplitude: 55, tonnage: 45 }, { amplitude: 56, tonnage: 45 }, { amplitude: 57, tonnage: 45 },
+                { amplitude: 58, tonnage: 45 }, { amplitude: 59, tonnage: 45 }, { amplitude: 60, tonnage: 45 },
+                { amplitude: 61, tonnage: 45 }, { amplitude: 62, tonnage: 45 }, { amplitude: 63, tonnage: 45 },
+                { amplitude: 64, tonnage: 45 }, { amplitude: 65, tonnage: 45 }, { amplitude: 66, tonnage: 45 },
+                { amplitude: 67, tonnage: 45 }, { amplitude: 68, tonnage: 45 }
+            ],
+            "2#": [
+                { amplitude: 1, tonnage: 50 }, { amplitude: 2, tonnage: 50 }, { amplitude: 3, tonnage: 50 },
+                { amplitude: 4, tonnage: 50 }, { amplitude: 5, tonnage: 50 }, { amplitude: 6, tonnage: 50 },
+                { amplitude: 7, tonnage: 50 }, { amplitude: 8, tonnage: 50 }, { amplitude: 9, tonnage: 50 },
+                { amplitude: 10, tonnage: 50 }, { amplitude: 11, tonnage: 50 }, { amplitude: 12, tonnage: 50 },
+                { amplitude: 13, tonnage: 50 }, { amplitude: 14, tonnage: 50 }, { amplitude: 15, tonnage: 50 },
+                { amplitude: 16, tonnage: 50 }, { amplitude: 17, tonnage: 50 }, { amplitude: 18, tonnage: 50 },
+                { amplitude: 19, tonnage: 50 }, { amplitude: 20, tonnage: 50 }, { amplitude: 21, tonnage: 50 },
+                { amplitude: 22, tonnage: 50 }, { amplitude: 23, tonnage: 50 }, { amplitude: 24, tonnage: 50 },
+                { amplitude: 25, tonnage: 50 }, { amplitude: 26, tonnage: 50 }, { amplitude: 27, tonnage: 50 },
+                { amplitude: 28, tonnage: 50 }, { amplitude: 29, tonnage: 50 }, { amplitude: 30, tonnage: 50 },
+                { amplitude: 31, tonnage: 50 }, { amplitude: 32, tonnage: 50 }, { amplitude: 33, tonnage: 50 },
+                { amplitude: 34, tonnage: 50 }, { amplitude: 35, tonnage: 50 }, { amplitude: 36, tonnage: 50 },
+                { amplitude: 37, tonnage: 50 }, { amplitude: 38, tonnage: 50 }, { amplitude: 39, tonnage: 50 },
+                { amplitude: 40, tonnage: 50 }, { amplitude: 41, tonnage: 50 }, { amplitude: 42, tonnage: 50 },
+                { amplitude: 43, tonnage: 50 }, { amplitude: 44, tonnage: 50 }, { amplitude: 45, tonnage: 50 },
+                { amplitude: 46, tonnage: 50 }, { amplitude: 47, tonnage: 50 }, { amplitude: 48, tonnage: 50 },
+                { amplitude: 49, tonnage: 50 }, { amplitude: 50, tonnage: 50 }, { amplitude: 51, tonnage: 50 },
+                { amplitude: 52, tonnage: 50 }, { amplitude: 53, tonnage: 50 }, { amplitude: 54, tonnage: 50 },
+                { amplitude: 55, tonnage: 50 }, { amplitude: 56, tonnage: 50 }, { amplitude: 57, tonnage: 50 },
+                { amplitude: 58, tonnage: 50 }, { amplitude: 59, tonnage: 50 }, { amplitude: 60, tonnage: 50 },
+                { amplitude: 61, tonnage: 50 }, { amplitude: 62, tonnage: 50 }, { amplitude: 63, tonnage: 50 }
+            ],
+            "134#": [
+                { amplitude: 1, tonnage: 48 }, { amplitude: 2, tonnage: 48 }, { amplitude: 3, tonnage: 48 },
+                { amplitude: 4, tonnage: 48 }, { amplitude: 5, tonnage: 48 }, { amplitude: 6, tonnage: 48 },
+                { amplitude: 7, tonnage: 48 }, { amplitude: 8, tonnage: 48 }, { amplitude: 9, tonnage: 48 },
+                { amplitude: 10, tonnage: 48 }, { amplitude: 11, tonnage: 48 }, { amplitude: 12, tonnage: 48 },
+                { amplitude: 13, tonnage: 48 }, { amplitude: 14, tonnage: 48 }, { amplitude: 15, tonnage: 48 },
+                { amplitude: 16, tonnage: 48 }, { amplitude: 17, tonnage: 48 }, { amplitude: 18, tonnage: 48 },
+                { amplitude: 19, tonnage: 48 }, { amplitude: 20, tonnage: 48 }, { amplitude: 21, tonnage: 48 },
+                { amplitude: 22, tonnage: 48 }, { amplitude: 23, tonnage: 48 }, { amplitude: 24, tonnage: 48 },
+                { amplitude: 25, tonnage: 48 }, { amplitude: 26, tonnage: 48 }, { amplitude: 27, tonnage: 48 },
+                { amplitude: 28, tonnage: 48 }, { amplitude: 29, tonnage: 48 }, { amplitude: 30, tonnage: 48 },
+                { amplitude: 31, tonnage: 48 }, { amplitude: 32, tonnage: 48 }, { amplitude: 33, tonnage: 48 },
+                { amplitude: 34, tonnage: 48 }, { amplitude: 35, tonnage: 48 }, { amplitude: 36, tonnage: 48 },
+                { amplitude: 37, tonnage: 48 }, { amplitude: 38, tonnage: 48 }, { amplitude: 39, tonnage: 48 },
+                { amplitude: 40, tonnage: 48 }, { amplitude: 41, tonnage: 48 }, { amplitude: 42, tonnage: 48 },
+                { amplitude: 43, tonnage: 48 }, { amplitude: 44, tonnage: 48 }, { amplitude: 45, tonnage: 48 },
+                { amplitude: 46, tonnage: 48 }, { amplitude: 47, tonnage: 48 }, { amplitude: 48, tonnage: 48 },
+                { amplitude: 49, tonnage: 48 }, { amplitude: 50, tonnage: 48 }, { amplitude: 51, tonnage: 48 },
+                { amplitude: 52, tonnage: 48 }, { amplitude: 53, tonnage: 48 }, { amplitude: 54, tonnage: 48 },
+                { amplitude: 55, tonnage: 48 }, { amplitude: 56, tonnage: 48 }
+            ]
+        };
+
+        // 图表实例
+        let tonnageChart = null;
+
+        // 计算函数
+        function calculate() {
+            // 清除之前的错误状态
+            clearErrors();
+            
+            // 获取输入值
+            const machineType = document.getElementById('machineType').value;
+            const wharfWidth = parseFloat(document.getElementById('wharfWidth').value);
+            const fenderWidth = parseFloat(document.getElementById('fenderWidth').value);
+            const shipWidth1 = parseFloat(document.getElementById('shipWidth1').value);
+            const shipWidth2 = parseFloat(document.getElementById('shipWidth2').value);
+            const buoyDiameter = parseFloat(document.getElementById('buoyDiameter').value);
+
+            // 验证输入
+            if (!validateInputs(wharfWidth, fenderWidth, shipWidth1, shipWidth2, buoyDiameter)) {
+                return;
+            }
+
+            // 解析门机臂长（从类似"11#-95"中提取95）
+            const armLength = parseFloat(machineType.split('-')[1]);
+            
+            // 计算最终可吊范围（基于Excel中的公式逻辑）
+            const finalRange = armLength - wharfWidth - fenderWidth - shipWidth1 - shipWidth2 - buoyDiameter;
+            
+            // 显示结果
+            document.getElementById('finalRange').textContent = finalRange.toFixed(2);
+            document.getElementById('suggestedRange').textContent = (finalRange * 0.8).toFixed(2); // 建议为80%范围
+            
+            // 查询并显示吨位信息
+            const machineNo = machineType.split('-')[0];
+            displayTonnageInfo(machineNo, finalRange);
+            
+            // 显示计算步骤
+            displayCalculationSteps(machineType, armLength, wharfWidth, fenderWidth, shipWidth1, shipWidth2, buoyDiameter, finalRange);
+            
+            // 更新图表
+            updateChart(machineNo, finalRange);
+        }
+
+        // 验证输入
+        function validateInputs(wharfWidth, fenderWidth, shipWidth1, shipWidth2, buoyDiameter) {
+            let isValid = true;
+            
+            if (wharfWidth > 50) {
+                showError('wharfWidth', '码头宽度不能超过50米');
+                isValid = false;
+            }
+            
+            if (fenderWidth > 10) {
+                showError('fenderWidth', '靠把宽度不能超过10米');
+                isValid = false;
+            }
+            
+            if (shipWidth1 > 100) {
+                showError('shipWidth1', '船宽不能超过100米');
+                isValid = false;
+            }
+            
+            if (shipWidth2 > 100) {
+                showError('shipWidth2', '船宽不能超过100米');
+                isValid = false;
+            }
+            
+            if (buoyDiameter > 10) {
+                showError('buoyDiameter', '靠球直径不能超过10米');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        // 显示错误
+        function showError(fieldId, message) {
+            const input = document.getElementById(fieldId);
+            const error = document.getElementById(fieldId + 'Error');
+            
+            input.classList.add('input-error');
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+
+        // 清除错误
+        function clearErrors() {
+            const errorMessages = document.querySelectorAll('.error-message');
+            errorMessages.forEach(error => {
+                error.style.display = 'none';
+            });
+            
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.classList.remove('input-error');
+            });
+        }
+
+        // 显示计算步骤
+        function displayCalculationSteps(machineType, armLength, wharfWidth, fenderWidth, shipWidth1, shipWidth2, buoyDiameter, finalRange) {
+            const stepsList = document.getElementById('calculationSteps');
+            stepsList.innerHTML = '';
+            
+            const steps = [
+                `门机类型: ${machineType} (臂长: ${armLength}米)`,
+                `码头宽度: ${wharfWidth}米`,
+                `靠把宽度: ${fenderWidth}米`,
+                `1档船宽: ${shipWidth1}米`,
+                `2档船宽: ${shipWidth2}米`,
+                `靠球直径: ${buoyDiameter}米`,
+                `计算公式: ${armLength} - ${wharfWidth} - ${fenderWidth} - ${shipWidth1} - ${shipWidth2} - ${buoyDiameter}`,
+                `最终可吊范围: ${finalRange.toFixed(2)}米`
+            ];
+            
+            steps.forEach(step => {
+                const li = document.createElement('li');
+                li.textContent = step;
+                stepsList.appendChild(li);
+            });
+        }
+
+        // 显示吨位信息
+        function displayTonnageInfo(machineNo, range) {
+            const table = document.getElementById('tonnageTable');
+            table.innerHTML = '<tr><th>幅度 (米)</th><th>吨位 (吨)</th></tr>';
+            
+            document.getElementById('currentMachine').textContent = machineNo;
+            
+            if (tonnageData[machineNo]) {
+                let closestTonnage = null;
+                let minDiff = Infinity;
+                let closestAmplitude = null;
+                
+                // 排序数据
+                const sortedData = [...tonnageData[machineNo]].sort((a, b) => a.amplitude - b.amplitude);
+                
+                sortedData.forEach(item => {
+                    // 添加行到表格
+                    const row = table.insertRow();
+                    const amplitudeCell = row.insertCell(0);
+                    const tonnageCell = row.insertCell(1);
+                    
+                    amplitudeCell.textContent = item.amplitude;
+                    tonnageCell.textContent = item.tonnage;
+                    
+                    // 找到最接近的吨位
+                    const diff = Math.abs(item.amplitude - range);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestTonnage = item.tonnage;
+                        closestAmplitude = item.amplitude;
+                    }
+                    
+                    // 高亮显示最接近的行
+                    if (item.amplitude === closestAmplitude) {
+                        row.classList.add('highlight');
+                    }
+                });
+                
+                document.getElementById('tonnageResult').textContent = closestTonnage || "无匹配数据";
+            } else {
+                document.getElementById('tonnageResult').textContent = "暂无该门机吨位数据";
+                const row = table.insertRow();
+                const cell = row.insertCell(0);
+                cell.colSpan = 2;
+                cell.textContent = "暂无该门机吨位数据";
+                cell.style.textAlign = "center";
+            }
+        }
+
+        // 更新图表
+        function updateChart(machineNo, range) {
+            const ctx = document.getElementById('tonnageChart').getContext('2d');
+            
+            if (tonnageChart) {
+                tonnageChart.destroy();
+            }
+            
+            if (!tonnageData[machineNo]) {
+                return;
+            }
+            
+            // 准备图表数据
+            const sortedData = [...tonnageData[machineNo]].sort((a, b) => a.amplitude - b.amplitude);
+            const amplitudes = sortedData.map(item => item.amplitude);
+            const tonnages = sortedData.map(item => item.tonnage);
+            
+            // 找到最接近当前计算结果的点
+            let closestIndex = 0;
+            let minDiff = Infinity;
+            sortedData.forEach((item, index) => {
+                const diff = Math.abs(item.amplitude - range);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closestIndex = index;
+                }
+            });
+            
+            // 创建图表
+            tonnageChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: amplitudes,
+                    datasets: [
+                        {
+                            label: '吨位-幅度关系',
+                            data: tonnages,
+                            borderColor: '#3498db',
+                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '当前计算结果',
+                            data: amplitudes.map((amp, index) => index === closestIndex ? tonnages[index] : null),
+                            borderColor: '#e74c3c',
+                            backgroundColor: '#e74c3c',
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            showLine: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '吨位-幅度关系图',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '幅度 (米)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '吨位 (吨)'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // 保存计算历史
+        function saveCalculation() {
+            const calculation = {
+                id: Date.now(),
+                date: new Date().toLocaleString(),
+                machineType: document.getElementById('machineType').value,
+                wharfWidth: document.getElementById('wharfWidth').value,
+                fenderWidth: document.getElementById('fenderWidth').value,
+                shipWidth1: document.getElementById('shipWidth1').value,
+                shipWidth2: document.getElementById('shipWidth2').value,
+                buoyDiameter: document.getElementById('buoyDiameter').value,
+                finalRange: document.getElementById('finalRange').textContent,
+                tonnageResult: document.getElementById('tonnageResult').textContent
+            };
+            
+            let history = JSON.parse(localStorage.getItem('doorMachineHistory')) || [];
+            history.unshift(calculation);
+            
+            // 只保留最近的10条记录
+            if (history.length > 10) {
+                history = history.slice(0, 10);
+            }
+            
+            localStorage.setItem('doorMachineHistory', JSON.stringify(history));
+            loadHistory();
+            
+            alert('方案已保存到历史记录！');
+        }
+
+        // 加载历史记录
+        function loadHistory() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            
+            const history = JSON.parse(localStorage.getItem('doorMachineHistory')) || [];
+            
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="history-item">暂无历史记录</div>';
+                return;
+            }
+            
+            history.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
+                    <div>
+                        <div>${item.machineType} - ${item.finalRange}米 - ${item.tonnageResult}吨</div>
+                        <div class="history-date">${item.date}</div>
+                    </div>
+                    <div class="history-actions">
+                        <button class="history-btn" onclick="loadHistoryItem(${item.id})">加载</button>
+                        <button class="history-btn" onclick="deleteHistoryItem(${item.id})">删除</button>
+                    </div>
+                `;
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        // 加载历史记录项
+        function loadHistoryItem(id) {
+            const history = JSON.parse(localStorage.getItem('doorMachineHistory')) || [];
+            const item = history.find(h => h.id === id);
+            
+            if (item) {
+                document.getElementById('machineType').value = item.machineType;
+                document.getElementById('wharfWidth').value = item.wharfWidth;
+                document.getElementById('fenderWidth').value = item.fenderWidth;
+                document.getElementById('shipWidth1').value = item.shipWidth1;
+                document.getElementById('shipWidth2').value = item.shipWidth2;
+                document.getElementById('buoyDiameter').value = item.buoyDiameter;
+                
+                calculate();
+                alert('历史记录已加载！');
+            }
+        }
+
+        // 删除历史记录项
+        function deleteHistoryItem(id) {
+            let history = JSON.parse(localStorage.getItem('doorMachineHistory')) || [];
+            history = history.filter(h => h.id !== id);
+            localStorage.setItem('doorMachineHistory', JSON.stringify(history));
+            loadHistory();
+        }
+
+        // 添加到对比
+        function addToComparison() {
+            const calculation = {
+                id: Date.now(),
+                machineType: document.getElementById('machineType').value,
+                wharfWidth: document.getElementById('wharfWidth').value,
+                fenderWidth: document.getElementById('fenderWidth').value,
+                shipWidth1: document.getElementById('shipWidth1').value,
+                shipWidth2: document.getElementById('shipWidth2').value,
+                buoyDiameter: document.getElementById('buoyDiameter').value,
+                finalRange: document.getElementById('finalRange').textContent,
+                tonnageResult: document.getElementById('tonnageResult').textContent
+            };
+            
+            let comparisons = JSON.parse(localStorage.getItem('doorMachineComparisons')) || [];
+            comparisons.push(calculation);
+            
+            // 只保留最多5个对比项
+            if (comparisons.length > 5) {
+                comparisons = comparisons.slice(comparisons.length - 5);
+            }
+            
+            localStorage.setItem('doorMachineComparisons', JSON.stringify(comparisons));
+            loadComparisons();
+            
+            alert('已添加到方案对比！');
+        }
+
+        // 加载对比
+        function loadComparisons() {
+            const comparisonTable = document.getElementById('comparisonTable');
+            comparisonTable.innerHTML = '';
+            
+            const comparisons = JSON.parse(localStorage.getItem('doorMachineComparisons')) || [];
+            
+            if (comparisons.length === 0) {
+                comparisonTable.innerHTML = '<tr><td colspan="8">暂无对比数据</td></tr>';
+                return;
+            }
+            
+            // 创建表头
+            const headerRow = comparisonTable.insertRow();
+            headerRow.innerHTML = `
+                <th>序号</th>
+                <th>门机类型</th>
+                <th>码头宽</th>
+                <th>靠把宽</th>
+                <th>1档船宽</th>
+                <th>2档船宽</th>
+                <th>靠球直径</th>
+                <th>可吊范围</th>
+                <th>可吊吨位</th>
+                <th>操作</th>
+            `;
+            
+            // 添加数据行
+            comparisons.forEach((item, index) => {
+                const row = comparisonTable.insertRow();
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.machineType}</td>
+                    <td>${item.wharfWidth}</td>
+                    <td>${item.fenderWidth}</td>
+                    <td>${item.shipWidth1}</td>
+                    <td>${item.shipWidth2}</td>
+                    <td>${item.buoyDiameter}</td>
+                    <td>${item.finalRange}</td>
+                    <td>${item.tonnageResult}</td>
+                    <td><button class="history-btn" onclick="removeComparison(${item.id})">删除</button></td>
+                `;
+            });
+        }
+
+        // 删除对比项
+        function removeComparison(id) {
+            let comparisons = JSON.parse(localStorage.getItem('doorMachineComparisons')) || [];
+            comparisons = comparisons.filter(c => c.id !== id);
+            localStorage.setItem('doorMachineComparisons', JSON.stringify(comparisons));
+            loadComparisons();
+        }
+
+        // 重置表单
+        function resetForm() {
+            document.getElementById('machineType').value = "11#-95";
+            document.getElementById('wharfWidth').value = "10";
+            document.getElementById('fenderWidth').value = "2";
+            document.getElementById('shipWidth1').value = "45";
+            document.getElementById('shipWidth2').value = "0";
+            document.getElementById('buoyDiameter').value = "3";
+            
+            calculate();
+        }
+
+        // 为所有输入元素添加事件监听器
+        function setupEventListeners() {
+            const inputs = document.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                input.addEventListener('input', calculate);
+                input.addEventListener('change', calculate);
+            });
+        }
+
+        // 页面加载时初始化
+        window.onload = function() {
+            setupEventListeners();
+            calculate(); // 初始计算
+            loadHistory(); // 加载历史记录
+            loadComparisons(); // 加载对比数据
+        };
+    </script>
+</body>
+</html>
